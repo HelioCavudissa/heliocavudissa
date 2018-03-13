@@ -165,7 +165,10 @@
   
     
     if(++self.counter < self.numberPages.integerValue){
-            NSURL *requestURL = [HttpRequestsUtility buildRequestURL:API_BASE_URL andPath:@"movie/now_playing" withQueryParams:@{@"api_key": API_KEY, @"language": @"pt-PT", @"page":[ NSString stringWithFormat: ßself.counter ]}];
+
+       
+        
+        NSURL *requestURL = [HttpRequestsUtility buildRequestURL:API_BASE_URL andPath:@"movie/now_playing" withQueryParams:@{@"api_key": API_KEY, @"language": @"pt-PT", @"page": [NSString stringWithFormat:@"%d",self.counter]}];
         
             __weak MovieListViewController *weakSelf = self;
             [HttpRequestsUtility executeGETRequest:requestURL withCompletion:^(id response, NSError *error) {
