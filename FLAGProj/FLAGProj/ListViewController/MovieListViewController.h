@@ -9,5 +9,6 @@
 #import <UIKit/UIKit.h>
 
 @interface MovieListViewController : UIViewController
+- (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar;
 
 @end

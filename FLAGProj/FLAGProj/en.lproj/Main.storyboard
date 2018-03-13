@@ -82,8 +82,8 @@
                                     </tableViewCell>
                                 </prototypes>
                             </tableView>
-                            <searchBar contentMode="redraw" translatesAutoresizingMaskIntoConstraints="NO" id="IvP-Wx-S1C">
-                                <rect key="frame" x="16" y="69" width="343" height="56"/>
+                            <searchBar contentMode="redraw" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="IvP-Wx-S1C">
+                                <rect key="frame" x="0.0" y="64" width="343" height="56"/>
                                 <textInputTraits key="textInputTraits"/>
                             </searchBar>
                         </subviews>
@@ -98,6 +98,7 @@
                     <navigationItem key="navigationItem" id="r1E-I5-tgb"/>
                     <connections>
                         <outlet property="listView" destination="gl5-Bk-ECC" id="lXm-e3-pcL"/>
+                        <outlet property="searchMovieBar" destination="IvP-Wx-S1C" id="GT7-as-iVk"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="hSR-48-q4j" userLabel="First Responder" sceneMemberID="firstResponder"/>

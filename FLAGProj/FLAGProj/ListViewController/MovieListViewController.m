@@ -16,7 +16,8 @@
 #import "Movie.h"
 #import "DetailViewController.h"
 
-@interface MovieListViewController ()<UITableViewDataSource,UITableViewDelegate>
+@interface MovieListViewController ()<UITableViewDataSource,UITableViewDelegate,UISearchBarDelegate>
+@property (weak, nonatomic) IBOutlet UISearchBar *searchMovieBar;
 @property (weak, nonatomic) IBOutlet UIImageView *downloadImage;
 @property (strong, nonatomic) CoreDataHelper *dbHelper;
 @property (weak, nonatomic) IBOutlet UITableView *listView;
@@ -24,6 +25,8 @@
 @property (nonatomic,strong) UIView *footerView;
 @property (nonatomic,strong) NSNumber *numberPages;
 @property (nonatomic,assign) int counter ;
+@property (nonatomic,assign) Boolean isSearching ;
+@property (nonatomic, strong) NSMutableArray  *searchResults;
 @end
 
 @implementation MovieListViewController
@@ -33,11 +36,27 @@
     // Do any additional setup after loading the view, typically from a nib.
     self.dbHelper = [[CoreDataHelper alloc] init];
     self.moviesRepo = [ [NSMutableArray alloc] init];
+    self.searchResults = [ [NSMutableArray alloc] init];
     self.listView.dataSource = self;
     self.listView.delegate = self;
+    self.searchMovieBar.delegate = self;
+    self.searchMovieBar.showsCancelButton =true;
     self.counter =1;
+    self.isSearching=false;
     
     [self loadMovies];
+    
+  //  NSLocale *deviceLocale = [NSLocale currentLocale];
+    
+  ///  NSNumberFormatter *formater =[[NSNumberFormatter alloc] init];
+ ///   formater.locale = deviceLocale;
+  ///  NSString *heardertext = NSLocalizedString(@"Movie.List.Header.RefreshDate.Text update", nil);
+    
+    
+    
+    
+    
+    
     
     //create a request for movies and call the webservice for a response
     NSURL *requestURL = [HttpRequestsUtility buildRequestURL:API_BASE_URL andPath:@"movie/now_playing" withQueryParams:@{@"api_key": API_KEY, @"language": @"pt-PT", @"page": @"1"}];
@@ -100,7 +119,9 @@
 
     
     MovieTableViewCell *cell = (MovieTableViewCell*)[tableView dequeueReusableCellWithIdentifier:@"utilizador-right-detail-cell"];
-    Movie *item = [self.moviesRepo objectAtIndex:indexPath.row];
+    
+    
+    Movie *item =  (self.isSearching) ? [self.searchResults objectAtIndex:indexPath.row] : [self.moviesRepo objectAtIndex:indexPath.row];
     
     [cell setCellValues:item.title andreleaseDate:item.release_date andVoteAvg:item.vote_average.stringValue];
     
@@ -121,12 +142,12 @@
 
 - (NSInteger)tableView:(nonnull UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     //retorno da contagem do número de linhas
-    return self.moviesRepo.count;
+    return self.isSearching ? self.searchResults.count : self.moviesRepo.count;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     //obtenção do modelo dos utilizadores correspondente à linha seleccionada
-    Movie *item = [self.moviesRepo objectAtIndex:indexPath.row];
+    Movie *item = self.isSearching ? [self.searchResults objectAtIndex:indexPath.row]:[self.moviesRepo objectAtIndex:indexPath.row];
     
     //Instanciação manual do ecrã seguinte no fluxo recorrendo ao carregamento do storyboard a partir do nome deste e o ViewController a partir do identificador atribuido no Interface Builder
     UIStoryboard *sbMain = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
@@ -142,13 +163,13 @@
     
     CGRect footerFrame = CGRectMake(0, 0, self.listView.bounds.size.width, 50);
     self.footerView = [[UIView alloc] initWithFrame:footerFrame];
-    [self.footerView setBackgroundColor:[UIColor blackColor]];
+    [self.footerView setBackgroundColor:[UIColor redColor]];
     [self.footerView setTintColor:[UIColor whiteColor]];
     
     UILabel *loadMore = [[UILabel alloc] initWithFrame: footerFrame];
-    [loadMore setText:@"load"];
+    [loadMore setText:@"load movies"];
     [self.footerView addSubview:loadMore];
-    UITapGestureRecognizer *footerTap = [[UITapGestureRecognizer alloc ] initWithTarget:self action:@selector(footerView)];
+    UITapGestureRecognizer *footerTap = [[UITapGestureRecognizer alloc ] initWithTarget:self action:@selector(footerTaped)];
     footerTap.numberOfTapsRequired = 1;
     [self.footerView addGestureRecognizer:footerTap];
     
@@ -193,7 +214,8 @@
             }];
         
             }
-    else self.counter=0;
+        else
+            self.counter=0;
     
     
 }
@@ -206,4 +228,27 @@
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
 }
+
+- (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar{
+
+    for(Movie *movie in self.moviesRepo){
+        NSString* title = [movie.title lowercaseString];
+        if([title containsString:[searchBar.text lowercaseString]]){
+            [self.searchResults addObject:movie];
+        }
+    }
+    self.isSearching=true;
+    
+    [self.listView reloadData];
+}
+
+-(void) searchBarCancelButtonClicked:(UISearchBar *)searchBar{
+    self.isSearching=false;
+    [self.searchResults removeAllObjects];
+    [self.listView reloadData];
+    self.searchMovieBar.text = @"";
+    
+}
+
+
 @end
