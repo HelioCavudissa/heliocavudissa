@@ -29,6 +29,7 @@
 @property (nonatomic,assign) Boolean isSearching ;
 @property (nonatomic, strong) NSMutableArray  *searchResults;
 @property (nonatomic, strong)  NSDateFormatter *dateFormatter;
+@property (nonatomic) UIRefreshControl *refreshControl;
 
 @end
 
@@ -48,7 +49,7 @@
     self.isSearching=false;
  
     
-    [self loadMovies];
+
     
     
    
@@ -59,55 +60,13 @@
  ///   formater.locale = deviceLocale;
   ///  NSString *heardertext = NSLocalizedString(@"Movie.List.Header.RefreshDate.Text update", nil);
     
-    
-    
-    
-    
-    
-    
-    //create a request for movies and call the webservice for a response
-    NSURL *requestURL = [HttpRequestsUtility buildRequestURL:API_BASE_URL andPath:@"movie/now_playing" withQueryParams:@{@"api_key": API_KEY, @"language": @"pt-PT", @"page": @"1"}];
-    
-    __weak MovieListViewController *weakSelf = self;
-    [HttpRequestsUtility executeGETRequest:requestURL withCompletion:^(id response, NSError *error) {
-        //this completion handler code is executing in background
-        if(error != nil) {
-            NSLog(@"error - %@", [error localizedDescription]);
-        }
-        else {
-            
-            self.dateFormatter = [[NSDateFormatter alloc] init];
-            //parse the service response and transform into Model Objects
-            NSDictionary *dict = (NSDictionary*)response;
-            NSLog(@"response - %@", dict);
-            
-            MoviesResponse *responseParse = [[MoviesResponse alloc] initWithDictionary:dict];
-            [self.moviesRepo addObjectsFromArray: responseParse.results ];
-            self.numberPages = responseParse.total_pages;
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self.listView reloadData];
-            });
-            //save retrieved model objects in coredata database via dbhelper instanfe
-            [weakSelf.dbHelper saveOrUpdateMovieList:responseParse.results];
-        }
-    }];
-    
-    
-    //create an image URL to download
-    NSURL *imgRequestURL = [HttpRequestsUtility buildRequestURL:@"http://upload.wikimedia.org/wikipedia/commons/7/7f/Williams_River-27527.jpg" andPath:nil withQueryParams:nil];
-    
-    //execute download image and set UI image view resource in completion handler, useful for example when you need to work the image before applying it to the UIImageView
-    [HttpRequestsUtility executeDownloadImage:imgRequestURL withCompletion:^(UIImage *image, NSError *error) {
-        //this completion handler code is executing in foreground main thread
-        if(error == nil) {
-            weakSelf.downloadImage.image = image;
-        }
-    }];
-    
-    //execute download image and set UI image view resource in imageview passed by parameter; receive errors in failure block if an error occurs -> this is useful for example in lists, download images asynchronously
-    [HttpRequestsUtility executeDownloadImage:imgRequestURL intoImageView:self.downloadImage withErrorHandler:^(NSError *error) {
-        NSLog(@"Oh oh, something went wrong - %@", [error localizedDescription]);
-    }];
+
+    // setting footerView
+    [self loadMovies];
+    //Setting refreshControl
+    [self refreshSettings];
+   //First request , where  1 is the page's number
+    [self doRequest:1];
     
     
     //load Movie Objects from core data, with pagination, executing all data fetch in background and delivering the results in foreground main thread
@@ -222,43 +181,12 @@
 }
 -(void)footerTaped{
     
-  
-    
-    if(++self.counter < self.numberPages.integerValue){
-
-       
-        
-        NSURL *requestURL = [HttpRequestsUtility buildRequestURL:API_BASE_URL andPath:@"movie/now_playing" withQueryParams:@{@"api_key": API_KEY, @"language": @"pt-PT", @"page": [NSString stringWithFormat:@"%d",self.counter]}];
-        
-            __weak MovieListViewController *weakSelf = self;
-            [HttpRequestsUtility executeGETRequest:requestURL withCompletion:^(id response, NSError *error) {
-                //this completion handler code is executing in background
-                if(error != nil) {
-                    NSLog(@"error - %@", [error localizedDescription]);
-                }
-                else {
-                    self.dateFormatter = [[NSDateFormatter alloc] init];
-                    //parse the service response and transform into Model Objects
-                    NSDictionary *dict = (NSDictionary*)response;
-                    NSLog(@"response - %@", dict);
-                    
-                    MoviesResponse *responseParse = [[MoviesResponse alloc] initWithDictionary:dict];
-                    [self.moviesRepo addObjectsFromArray: responseParse.results ];
-                 
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        [self.listView reloadData];
-                    });
-                    //save retrieved model objects in coredata database via dbhelper instanfe
-                    [weakSelf.dbHelper saveOrUpdateMovieList:responseParse.results];
-                }
-            }];
-        
-            }
+       if(++self.counter < self.numberPages.integerValue){
+              [self doRequest:self.counter];
+        }
         else
-            self.counter=0;
-    
-    
-}
+              self.counter=0;
+    }
 
 
 
@@ -288,6 +216,49 @@
     [self.listView reloadData];
     self.searchMovieBar.text = @"";
     
+}
+
+-(void)doRequest:(int)page{
+    
+    NSURL *requestURL = [HttpRequestsUtility buildRequestURL:API_BASE_URL andPath:@"movie/now_playing" withQueryParams:@{@"api_key": API_KEY, @"language": @"pt-PT", @"page": [NSString stringWithFormat:@"%d",page]}];
+    
+    __weak MovieListViewController *weakSelf = self;
+    [HttpRequestsUtility executeGETRequest:requestURL withCompletion:^(id response, NSError *error) {
+        //this completion handler code is executing in background
+        if(error != nil) {
+            NSLog(@"error - %@", [error localizedDescription]);
+        }
+        else {
+            self.dateFormatter = [[NSDateFormatter alloc] init];
+            //parse the service response and transform into Model Objects
+            NSDictionary *dict = (NSDictionary*)response;
+            NSLog(@"response - %@", dict);
+            
+            MoviesResponse *responseParse = [[MoviesResponse alloc] initWithDictionary:dict];
+            [self.moviesRepo addObjectsFromArray: responseParse.results ];
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self.listView reloadData];
+            });
+            //save retrieved model objects in coredata database via dbhelper instanfe
+            [weakSelf.dbHelper saveOrUpdateMovieList:responseParse.results];
+        }
+    }];
+    
+}
+
+- (void)refreshTable {
+    [self doRequest:1];
+    [self.refreshControl endRefreshing];
+    [self.listView reloadData];
+}
+
+- (void)refreshSettings{
+    self.refreshControl = [[UIRefreshControl alloc]init];
+    [self.listView addSubview:self.refreshControl];
+    [self.refreshControl addTarget:self action:@selector(refreshTable) forControlEvents:UIControlEventValueChanged];
+    //Setting the tint Color of the Activity Animation
+    self.refreshControl.tintColor = [UIColor blackColor];
 }
 
 
