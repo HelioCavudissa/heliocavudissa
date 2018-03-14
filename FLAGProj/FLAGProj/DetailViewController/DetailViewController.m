@@ -66,4 +66,9 @@
 }
 */
 
+- (IBAction)shareWithinApps:(id)sender {
+    NSArray *itemsToShare = @[self.title];
+    UIActivityViewController *uiacv = [ [UIActivityViewController alloc] initWithActivityItems:itemsToShare applicationActivities:nil ];
+    [self presentViewController:uiacv animated:YES completion:nil];
+}
 @end

@@ -23,10 +23,13 @@
 @property (weak, nonatomic) IBOutlet UITableView *listView;
 @property (nonatomic, strong) NSMutableArray *moviesRepo;
 @property (nonatomic,strong) UIView *footerView;
+@property (nonatomic,strong) UIView *headerView;
 @property (nonatomic,strong) NSNumber *numberPages;
 @property (nonatomic,assign) int counter ;
 @property (nonatomic,assign) Boolean isSearching ;
 @property (nonatomic, strong) NSMutableArray  *searchResults;
+@property (nonatomic, strong)  NSDateFormatter *dateFormatter;
+
 @end
 
 @implementation MovieListViewController
@@ -43,9 +46,13 @@
     self.searchMovieBar.showsCancelButton =true;
     self.counter =1;
     self.isSearching=false;
+ 
     
     [self loadMovies];
     
+    
+   
+
   //  NSLocale *deviceLocale = [NSLocale currentLocale];
     
   ///  NSNumberFormatter *formater =[[NSNumberFormatter alloc] init];
@@ -68,6 +75,8 @@
             NSLog(@"error - %@", [error localizedDescription]);
         }
         else {
+            
+            self.dateFormatter = [[NSDateFormatter alloc] init];
             //parse the service response and transform into Model Objects
             NSDictionary *dict = (NSDictionary*)response;
             NSLog(@"response - %@", dict);
@@ -181,6 +190,36 @@
     
 }
 
+-(UIView*)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    // 1. The view for the header
+    UIView* headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, tableView.frame.size.width, 22)];
+    
+    // 2. Set a custom background color and a border
+    headerView.backgroundColor = [UIColor colorWithWhite:0.5f alpha:1.0f];
+    headerView.layer.borderColor = [UIColor colorWithWhite:0.5 alpha:1.0].CGColor;
+    headerView.layer.borderWidth = 1.0;
+    
+    // 3. Add a label
+    UILabel* headerLabel = [[UILabel alloc] init];
+    headerLabel.frame = CGRectMake(5, 2, tableView.frame.size.width - 5, 18);
+    headerLabel.backgroundColor = [UIColor clearColor];
+    headerLabel.textColor = [UIColor whiteColor];
+    headerLabel.font = [UIFont boldSystemFontOfSize:16.0];
+    
+    [self.dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+    
+    NSString *currentDate = [self.dateFormatter stringFromDate:[NSDate date]];
+    
+    headerLabel.text =[NSString stringWithFormat:@"LastUpdate :%@", currentDate];
+    headerLabel.textAlignment = NSTextAlignmentCenter;
+    
+    // 4. Add the label to the header view
+    [headerView addSubview:headerLabel];
+    
+    // 5. Finally return
+    return headerView;
+}
 -(void)footerTaped{
     
   
@@ -198,6 +237,7 @@
                     NSLog(@"error - %@", [error localizedDescription]);
                 }
                 else {
+                    self.dateFormatter = [[NSDateFormatter alloc] init];
                     //parse the service response and transform into Model Objects
                     NSDictionary *dict = (NSDictionary*)response;
                     NSLog(@"response - %@", dict);

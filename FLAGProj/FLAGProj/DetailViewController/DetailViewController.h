@@ -11,5 +11,6 @@
 
 @interface DetailViewController : UIViewController
 @property (nonatomic, strong) Movie *movie;
+- (IBAction)shareWithinApps:(id)sender;
 
 @end
