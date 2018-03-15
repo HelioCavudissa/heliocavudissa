@@ -235,6 +235,7 @@
             NSLog(@"response - %@", dict);
             
             MoviesResponse *responseParse = [[MoviesResponse alloc] initWithDictionary:dict];
+            
             [self.moviesRepo addObjectsFromArray: responseParse.results ];
             
             dispatch_async(dispatch_get_main_queue(), ^{
@@ -248,6 +249,7 @@
 }
 
 - (void)refreshTable {
+    
     [self doRequest:1];
     [self.refreshControl endRefreshing];
     [self.listView reloadData];

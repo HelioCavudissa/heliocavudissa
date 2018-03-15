@@ -240,7 +240,7 @@
                 [self.listView reloadData];
             });
             //save retrieved model objects in coredata database via dbhelper instanfe
-            [weakSelf.dbHelper saveOrUpdateMovieList:responseParse.results];
+           // [weakSelf.dbHelper saveOrUpdateMovieList:responseParse.results];
         }
     }];
     
