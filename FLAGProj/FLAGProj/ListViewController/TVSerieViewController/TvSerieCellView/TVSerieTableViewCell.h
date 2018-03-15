@@ -7,7 +7,9 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "TVSerie.h"
 
-@interface TVSerieTableViewCell : UITableView
-
+@interface TVSerieTableViewCell : UITableViewCell
+@property (weak, nonatomic) IBOutlet UIImageView *imageLabel;
+-(void)setCellValues:(TVSerie*)tvserie;
 @end

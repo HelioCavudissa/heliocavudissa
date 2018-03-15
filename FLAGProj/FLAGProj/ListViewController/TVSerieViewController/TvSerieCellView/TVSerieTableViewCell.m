@@ -8,14 +8,38 @@
 
 #import "TVSerieTableViewCell.h"
 
-@implementation TVSerieTableViewCell
 
-/*
-// Only override drawRect: if you perform custom drawing.
-// An empty implementation adversely affects performance during animation.
-- (void)drawRect:(CGRect)rect {
-    // Drawing code
-}
-*/
+@interface TVSerieTableViewCell()
+@property (weak, nonatomic) IBOutlet UILabel *nameLabel;
+@property (weak, nonatomic) IBOutlet UILabel *firstAirDateLabel;
+@property (weak, nonatomic) IBOutlet UILabel *voteAvgLabel;
+
+
+
 
 @end
+
+@implementation TVSerieTableViewCell
+
+- (void)awakeFromNib {
+    [super awakeFromNib];
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+    
+    // Configure the view for the selected state
+}
+
+-(void)setCellValues:(TVSerie*)tvserie{
+    [self.nameLabel setText:tvserie.name];
+    [self.firstAirDateLabel setText:tvserie.firstAirDate];
+    [self.voteAvgLabel setText:tvserie.vote_average.stringValue];
+    
+}
+
+
+
+@end
+

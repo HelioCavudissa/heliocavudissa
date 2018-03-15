@@ -105,10 +105,23 @@
             </objects>
             <point key="canvasLocation" x="-1834.4000000000001" y="-116.49175412293854"/>
         </scene>
-        <!--View Controller-->
+        <!--Navigation Controller-->
+        <scene sceneID="DtP-4S-IRL">
+            <objects>
+                <navigationController id="Tad-JE-CQS" sceneMemberID="viewController">
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="3se-CA-cMD">
+                        <rect key="frame" x="0.0" y="20" width="375" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="D2v-Wl-mee" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-2756" y="603"/>
+        </scene>
+        <!--Serie List View Controller-->
         <scene sceneID="c4L-w3-29U">
             <objects>
-                <viewController id="5V4-sl-99H" sceneMemberID="viewController">
+                <viewController id="5V4-sl-99H" customClass="TVSerieListViewController" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="v1B-Sy-l2a">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -118,7 +131,7 @@
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <prototypes>
-                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" rowHeight="72" id="wZA-fr-UTx">
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" rowHeight="72" id="wZA-fr-UTx" customClass="TVSerieTableViewCell">
                                         <rect key="frame" x="0.0" y="28" width="343" height="72"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="wZA-fr-UTx" id="vYD-ZT-NSe">
@@ -171,7 +184,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="WaY-pp-BpJ" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-1858.4000000000001" y="572.56371814092961"/>
+            <point key="canvasLocation" x="-1884" y="602"/>
         </scene>
         <!--View Controller-->
         <scene sceneID="VCM-Jd-HOG">
