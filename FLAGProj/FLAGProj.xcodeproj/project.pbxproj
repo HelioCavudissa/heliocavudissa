@@ -28,6 +28,7 @@
 		9F031EEB205ACDE000FA8ED8 /* TVSerie.m in Sources */ = {isa = PBXBuildFile; fileRef = 9F031EEA205ACDE000FA8ED8 /* TVSerie.m */; };
 		9F031EEE205AD4D700FA8ED8 /* TVSerieListViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9F031EED205AD4D700FA8ED8 /* TVSerieListViewController.m */; };
 		9F031EF3205AD90500FA8ED8 /* DetailTVSerieViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9F031EF2205AD90500FA8ED8 /* DetailTVSerieViewController.m */; };
+		9F2EEC44205C39ED00A00F8E /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = 9F2EEC43205C39ED00A00F8E /* Reachability.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -75,6 +76,9 @@
 		9F031EED205AD4D700FA8ED8 /* TVSerieListViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TVSerieListViewController.m; sourceTree = "<group>"; };
 		9F031EF1205AD90500FA8ED8 /* DetailTVSerieViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DetailTVSerieViewController.h; sourceTree = "<group>"; };
 		9F031EF2205AD90500FA8ED8 /* DetailTVSerieViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DetailTVSerieViewController.m; sourceTree = "<group>"; };
+		9F2EEC41205C374F00A00F8E /* settings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = settings.h; sourceTree = "<group>"; };
+		9F2EEC42205C39ED00A00F8E /* Reachability.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Reachability.h; sourceTree = "<group>"; };
+		9F2EEC43205C39ED00A00F8E /* Reachability.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Reachability.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -162,6 +166,8 @@
 				42495768204A23BE00AF4BA2 /* Info.plist */,
 				42495769204A23BE00AF4BA2 /* main.m */,
 				42495760204A23BE00AF4BA2 /* FLAGProj.xcdatamodeld */,
+				9F2EEC42205C39ED00A00F8E /* Reachability.h */,
+				9F2EEC43205C39ED00A00F8E /* Reachability.m */,
 			);
 			path = FLAGProj;
 			sourceTree = "<group>";
@@ -190,6 +196,7 @@
 				4249577A204A2CD300AF4BA2 /* Configs.h */,
 				4249577B204A2E5100AF4BA2 /* HttpRequestsUtility.h */,
 				4249577C204A2E5100AF4BA2 /* HttpRequestsUtility.m */,
+				9F2EEC41205C374F00A00F8E /* settings.h */,
 			);
 			path = Http;
 			sourceTree = "<group>";
@@ -367,6 +374,7 @@
 				849717122051C0ED009FBB16 /* MovieTableViewCell.m in Sources */,
 				42298AB52050AF6E00A91AA0 /* CDMovie+CoreDataProperties.m in Sources */,
 				2CF8A62520543A0C0072C994 /* TVSerieTableViewCell.m in Sources */,
+				9F2EEC44205C39ED00A00F8E /* Reachability.m in Sources */,
 				849717192051DBB9009FBB16 /* DetailViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

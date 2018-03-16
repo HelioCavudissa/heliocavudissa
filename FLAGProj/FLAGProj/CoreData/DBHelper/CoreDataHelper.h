@@ -12,7 +12,8 @@
 @interface CoreDataHelper : NSObject
 
 -(void)saveOrUpdateMovieList:(NSArray*)moviesList;
--(BOOL)saveOrUpdateMovie:(Movie*)movie;
+-(void)saveOrUpdateMovie:(Movie*)movie;
 -(void)loadMoviesPage:(NSInteger)page withSize:(NSInteger)pageSize withCompletionHandler:(void (^) (NSMutableArray*, NSError*))completion;
 
 @end
+

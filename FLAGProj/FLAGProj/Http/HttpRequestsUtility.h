@@ -21,3 +21,4 @@
 +(void)executeDownloadImage:(NSURL*)imgUrl intoImageView:(UIImageView*)imageView withErrorHandler:(void (^) (NSError*))failure;
 
 @end
+

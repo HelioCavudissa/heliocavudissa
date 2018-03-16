@@ -10,6 +10,8 @@
 
 @interface AppDelegate ()
 
+@property (nonatomic, strong) NSManagedObjectContext *managedObjectContext;
+
 @end
 
 @implementation AppDelegate
@@ -71,7 +73,7 @@
                      * The device is out of space.
                      * The store could not be migrated to the current model version.
                      Check the error message to determine what the actual problem was.
-                    */
+                     */
                     NSLog(@"Unresolved error %@, %@", error, error.userInfo);
                     abort();
                 }
@@ -83,19 +85,78 @@
 }
 
 #pragma mark - Core Data Saving support
--(NSManagedObjectContext*)getManagedContext {
-    return self.persistentContainer.viewContext;
+- (NSManagedObjectContext *)managedObjectContext
+{
+    // Returns the managed object context for the application (which is already bound to the persistent store coordinator for the application.)
+    if (_managedObjectContext != nil) {
+        return _managedObjectContext;
+    }
+    
+    NSPersistentStoreCoordinator *coordinator = self.persistentContainer.persistentStoreCoordinator;
+    if (!coordinator) {
+        return nil;
+    }
+    _managedObjectContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSMainQueueConcurrencyType];
+    [_managedObjectContext setPersistentStoreCoordinator:coordinator];
+    return _managedObjectContext;
 }
 
-- (void)saveContext {
-    NSManagedObjectContext *context = self.persistentContainer.viewContext;
-    NSError *error = nil;
-    if ([context hasChanges] && ![context save:&error]) {
-        // Replace this implementation with code to handle the error appropriately.
-        // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-        NSLog(@"Unresolved error %@, %@", error, error.userInfo);
-        abort();
+-(NSManagedObjectContext*)getManagedContext {
+    NSManagedObjectContext *curMOC = [self managedObjectContext];
+    
+    NSThread *thisThread = [NSThread currentThread];
+    
+    if(thisThread == [NSThread mainThread]){
+        
+        if (curMOC != nil) {
+            return curMOC;
+        }
+        
+        NSPersistentStoreCoordinator *coordinator = self.persistentContainer.persistentStoreCoordinator;
+        if (coordinator != nil) {
+            curMOC = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSMainQueueConcurrencyType];
+            [curMOC setPersistentStoreCoordinator:coordinator];
+        }
+        return curMOC;
+    }
+    
+    // if this is some other thread....
+    // Get the current context from the same thread..
+    NSManagedObjectContext *_threadManagedObjectContext = [[thisThread threadDictionary] objectForKey:@"MOC_KEY"];
+    // Return separate MOC for each new thread
+    if (_threadManagedObjectContext != nil)
+    {
+        return _threadManagedObjectContext;
+    }
+    
+    NSPersistentStoreCoordinator *coordinator = self.persistentContainer.persistentStoreCoordinator;
+    if (coordinator != nil) {
+        _threadManagedObjectContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
+        [_threadManagedObjectContext setPersistentStoreCoordinator: coordinator];
+        [[thisThread threadDictionary] setObject:_threadManagedObjectContext forKey:@"MOC_KEY"];
+    }
+    
+    return _threadManagedObjectContext;
+}
+
+-(void) saveContext {
+    NSThread *thisThread = [NSThread currentThread];
+    NSManagedObjectContext *managedObjectContext = [[thisThread threadDictionary] objectForKey:@"MOC_KEY"];;
+    [managedObjectContext setMergePolicy:NSMergeByPropertyObjectTrumpMergePolicy];
+    
+    if (managedObjectContext != nil) {
+        
+        [managedObjectContext performBlock:^{
+            NSError *error = nil;
+            if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
+                NSLog(@"BG CONTEXT Unresolved error %@, %@", error, [error userInfo]);
+                abort();
+            }else{
+                NSLog(@"Context Saved");
+            }
+        }];
     }
 }
 
 @end
+

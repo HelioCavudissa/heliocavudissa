@@ -1,4 +1,5 @@
 //
+//
 //  CoreDataHelper.m
 //  aula_8
 //
@@ -35,38 +36,42 @@
     }
 }
 
--(BOOL)saveOrUpdateMovie:(Movie*)movie {
-    NSFetchRequest *userFetch = [NSFetchRequest fetchRequestWithEntityName:@"CDMovie"];
-    
-    NSPredicate *filter = [NSPredicate predicateWithFormat:@"movie_id == %@", movie.movieId.stringValue];
-    [userFetch setPredicate:filter];
-    
-    NSError *cdError = nil;
-    
-    NSArray *fetchResult = [self.moc executeFetchRequest:userFetch error:&cdError];
-    
-    CDMovie *cdMovie = nil;
-    if(fetchResult.count) {
-        cdMovie = fetchResult.firstObject;
-    }else {
-        cdMovie = [NSEntityDescription insertNewObjectForEntityForName:@"CDMovie" inManagedObjectContext:self.moc];
-    }
-    
-    [cdMovie setMovie_id:movie.movieId.integerValue];
-    [cdMovie setTitle:movie.title];
-    [cdMovie setPoster_path:movie.poster_path];
-    [cdMovie setOverview:movie.overview];
-    [cdMovie setRelease_date:movie.release_date];
-    [cdMovie setOriginal_title:movie.original_title];
-    [cdMovie setOriginal_language:movie.original_language];
-    [cdMovie setBackdrop_path:movie.backdrop_path];
-    [cdMovie setPopularity:movie.popularity.integerValue];
-    [cdMovie setVote_count:movie.vote_count.integerValue];
-    [cdMovie setVote_average:movie.vote_average.doubleValue];
-    
-    [self.moc save:&cdError];
-    
-    return cdError == nil;
+-(void)saveOrUpdateMovie:(Movie*)movie {
+    [self.moc performBlock:^{
+        NSFetchRequest *userFetch = [NSFetchRequest fetchRequestWithEntityName:@"CDMovie"];
+        
+        NSPredicate *filter = [NSPredicate predicateWithFormat:@"movie_id == %@", movie.movieId.stringValue];
+        [userFetch setPredicate:filter];
+        
+        NSError *cdError = nil;
+        
+        NSArray *fetchResult = [self.moc executeFetchRequest:userFetch error:&cdError];
+        
+        CDMovie *cdMovie = nil;
+        if(fetchResult.count) {
+            cdMovie = fetchResult.firstObject;
+        }else {
+            cdMovie = [NSEntityDescription insertNewObjectForEntityForName:@"CDMovie" inManagedObjectContext:self.moc];
+        }
+        
+        [cdMovie setMovie_id:movie.movieId.integerValue];
+        [cdMovie setTitle:movie.title];\
+        if(![movie.poster_path isEqual:[NSNull null]]) {
+            [cdMovie setPoster_path:movie.poster_path];
+        }
+        [cdMovie setOverview:movie.overview];
+        [cdMovie setRelease_date:movie.release_date];
+        [cdMovie setOriginal_title:movie.original_title];
+        [cdMovie setOriginal_language:movie.original_language];
+        if(![movie.backdrop_path isEqual:[NSNull null]]) {
+            [cdMovie setBackdrop_path:movie.backdrop_path];
+        }
+        [cdMovie setPopularity:movie.popularity.integerValue];
+        [cdMovie setVote_count:movie.vote_count.integerValue];
+        [cdMovie setVote_average:movie.vote_average.doubleValue];
+        
+        [self.moc save:&cdError];
+    }];
 }
 
 -(void)loadMoviesPage:(NSInteger)page withSize:(NSInteger)pageSize withCompletionHandler:(void (^) (NSMutableArray*, NSError*))completion {
@@ -97,7 +102,5 @@
 }
 
 
-
-
-
 @end
+

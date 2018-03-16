@@ -7,7 +7,6 @@
 //
 
 #import "MovieListViewController.h"
-
 #import "Configs.h"
 #import "HttpRequestsUtility.h"
 #import "MoviesResponse.h"
@@ -15,6 +14,9 @@
 #import "MovieTableViewCell.h"
 #import "Movie.h"
 #import "DetailViewController.h"
+#import "Reachability.h"
+
+
 
 @interface MovieListViewController ()<UITableViewDataSource,UITableViewDelegate,UISearchBarDelegate>
 @property (weak, nonatomic) IBOutlet UISearchBar *searchMovieBar;
@@ -27,6 +29,7 @@
 @property (nonatomic,strong) NSNumber *numberPages;
 @property (nonatomic,assign) int counter ;
 @property (nonatomic,assign) Boolean isSearching ;
+@property (nonatomic,assign) Boolean isFirstRequest ;
 @property (nonatomic, strong) NSMutableArray  *searchResults;
 @property (nonatomic, strong)  NSDateFormatter *dateFormatter;
 @property (nonatomic) UIRefreshControl *refreshControl;
@@ -47,10 +50,9 @@
     self.searchMovieBar.showsCancelButton =true;
     self.counter =1;
     self.isSearching=false;
+    self.isFirstRequest = true;
  
-    
-
-    
+ 
     
    
 
@@ -65,20 +67,8 @@
     [self loadMovies];
     //Setting refreshControl
     [self refreshSettings];
-   //First request , where  1 is the page's number
-    [self doRequest:1];
-    
-    
-    //load Movie Objects from core data, with pagination, executing all data fetch in background and delivering the results in foreground main thread
-    [self.dbHelper loadMoviesPage:1 withSize:10 withCompletionHandler:^(NSMutableArray *results, NSError *error) {
-        if(results.count) {
-            NSLog(@"resultsCount - %lu", results.count);
-        }
-        
-        if(error) {
-            NSLog(@"error - %@", [error localizedDescription]);
-        }
-    }];
+    [self loadFromDBOrRequestFromAPI:1];
+    self.isFirstRequest=false;
     
 }
 
@@ -227,6 +217,7 @@
         //this completion handler code is executing in background
         if(error != nil) {
             NSLog(@"error - %@", [error localizedDescription]);
+            [self displayToast];
         }
         else {
             self.dateFormatter = [[NSDateFormatter alloc] init];
@@ -234,15 +225,22 @@
             NSDictionary *dict = (NSDictionary*)response;
             NSLog(@"response - %@", dict);
             
+        
             MoviesResponse *responseParse = [[MoviesResponse alloc] initWithDictionary:dict];
-            
+            if(responseParse.page.integerValue == 1){
+                
+                [self.moviesRepo removeAllObjects];
+            }
             [self.moviesRepo addObjectsFromArray: responseParse.results ];
             
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self.listView reloadData];
             });
             //save retrieved model objects in coredata database via dbhelper instanfe
-            [weakSelf.dbHelper saveOrUpdateMovieList:responseParse.results];
+            //only the first time or for the next pages
+            if(self.isFirstRequest || page>1)
+                [weakSelf.dbHelper saveOrUpdateMovieList:responseParse.results];
+           
         }
     }];
     
@@ -261,6 +259,50 @@
     [self.refreshControl addTarget:self action:@selector(refreshTable) forControlEvents:UIControlEventValueChanged];
     //Setting the tint Color of the Activity Animation
     self.refreshControl.tintColor = [UIColor blackColor];
+}
+
+- (void)displayToast{
+    NSString *message = @"Please connect to internet...";
+    
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:nil message:message  preferredStyle:UIAlertControllerStyleActionSheet];
+    
+    [self presentViewController:alert animated:YES completion:nil];
+    
+    int duration = 3; // duration in seconds
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, duration * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        
+        [alert dismissViewControllerAnimated:YES completion:nil];
+        
+    });
+}
+
+- (BOOL)networkConnection {
+    return [[Reachability reachabilityWithHostName:@"www.google.com"] currentReachabilityStatus];
+}
+
+-(void)loadFromDBOrRequestFromAPI:(int)page{
+    if ([self networkConnection] == NotReachable) {
+        
+        [self.dbHelper loadMoviesPage:page withSize:10 withCompletionHandler:^(NSMutableArray *results, NSError *error) {
+            if(results.count) {
+                NSLog(@"resultsCount - %lu", results.count);
+                [self.moviesRepo removeAllObjects];
+                [self.moviesRepo addObjectsFromArray:results];
+                
+            }
+            
+            if(error) {
+                NSLog(@"error - %@", [error localizedDescription]);
+            }
+        }];
+        
+    } else {
+        //First request , where  1 is the page's number
+        [self doRequest:page];
+        
+        
+    }
 }
 
 
