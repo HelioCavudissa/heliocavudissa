@@ -20,6 +20,7 @@
 
 @interface MovieListViewController ()<UITableViewDataSource,UITableViewDelegate,UISearchBarDelegate>
 @property (weak, nonatomic) IBOutlet UISearchBar *searchMovieBar;
+@property (weak, nonatomic) IBOutlet UILabel *lastTimeUpdate;
 @property (weak, nonatomic) IBOutlet UIImageView *downloadImage;
 @property (strong, nonatomic) CoreDataHelper *dbHelper;
 @property (weak, nonatomic) IBOutlet UITableView *listView;
@@ -119,17 +120,20 @@
 
 - (void)loadMovies  {
     
-    CGRect footerFrame = CGRectMake(0, 0, self.listView.bounds.size.width, 50);
-    self.footerView = [[UIView alloc] initWithFrame:footerFrame];
-    [self.footerView setBackgroundColor:[UIColor redColor]];
-    [self.footerView setTintColor:[UIColor whiteColor]];
+    if(!self.footerView){
     
-    UILabel *loadMore = [[UILabel alloc] initWithFrame: footerFrame];
-    [loadMore setText:@"load movies"];
-    [self.footerView addSubview:loadMore];
-    UITapGestureRecognizer *footerTap = [[UITapGestureRecognizer alloc ] initWithTarget:self action:@selector(footerTaped)];
-    footerTap.numberOfTapsRequired = 1;
-    [self.footerView addGestureRecognizer:footerTap];
+        CGRect footerFrame = CGRectMake(0, 0, self.listView.bounds.size.width, 50);
+        self.footerView = [[UIView alloc] initWithFrame:footerFrame];
+        [self.footerView setBackgroundColor:[UIColor redColor]];
+        [self.footerView setTintColor:[UIColor whiteColor]];
+        
+        UILabel *loadMore = [[UILabel alloc] initWithFrame: footerFrame];
+        [loadMore setText:@"load movies"];
+        [self.footerView addSubview:loadMore];
+        UITapGestureRecognizer *footerTap = [[UITapGestureRecognizer alloc ] initWithTarget:self action:@selector(footerTaped)];
+        footerTap.numberOfTapsRequired = 1;
+        [self.footerView addGestureRecognizer:footerTap];
+    }
     
     if(self.counter>0)
        self.listView.tableFooterView=self.footerView;
@@ -139,40 +143,11 @@
     
 }
 
--(UIView*)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
-{
-    // 1. The view for the header
-    UIView* headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, tableView.frame.size.width, 22)];
-    
-    // 2. Set a custom background color and a border
-    headerView.backgroundColor = [UIColor colorWithWhite:0.5f alpha:1.0f];
-    headerView.layer.borderColor = [UIColor colorWithWhite:0.5 alpha:1.0].CGColor;
-    headerView.layer.borderWidth = 1.0;
-    
-    // 3. Add a label
-    UILabel* headerLabel = [[UILabel alloc] init];
-    headerLabel.frame = CGRectMake(5, 2, tableView.frame.size.width - 5, 18);
-    headerLabel.backgroundColor = [UIColor clearColor];
-    headerLabel.textColor = [UIColor whiteColor];
-    headerLabel.font = [UIFont boldSystemFontOfSize:16.0];
-    
-    [self.dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
-    
-    NSString *currentDate = [self.dateFormatter stringFromDate:[NSDate date]];
-    
-    headerLabel.text =[NSString stringWithFormat:@"LastUpdate :%@", currentDate];
-    headerLabel.textAlignment = NSTextAlignmentCenter;
-    
-    // 4. Add the label to the header view
-    [headerView addSubview:headerLabel];
-    
-    // 5. Finally return
-    return headerView;
-}
+
 -(void)footerTaped{
     
        if(++self.counter < self.numberPages.integerValue){
-              [self doRequest:self.counter];
+              [self loadFromDBOrRequestFromAPI:self.counter];
         }
         else
               self.counter=0;
@@ -217,16 +192,28 @@
         //this completion handler code is executing in background
         if(error != nil) {
             NSLog(@"error - %@", [error localizedDescription]);
+            [self loadFromDB:page];
             [self displayToast];
         }
         else {
-            self.dateFormatter = [[NSDateFormatter alloc] init];
+             self.dateFormatter = [[NSDateFormatter alloc] init];
+             [self.dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+             NSString *currentDate = [self.dateFormatter stringFromDate:[NSDate date]];
+             NSUserDefaults *prefs = [NSUserDefaults standardUserDefaults];
+             [prefs setObject:currentDate forKey:@"keyToLastUpdate"];
+            
+           
+            dispatch_async(dispatch_get_main_queue(), ^{
+                  [self getLastUpadateTime];
+            });
+            
             //parse the service response and transform into Model Objects
             NSDictionary *dict = (NSDictionary*)response;
             NSLog(@"response - %@", dict);
             
         
             MoviesResponse *responseParse = [[MoviesResponse alloc] initWithDictionary:dict];
+            self.numberPages = responseParse.total_pages;
             if(responseParse.page.integerValue == 1){
                 
                 [self.moviesRepo removeAllObjects];
@@ -282,20 +269,10 @@
 }
 
 -(void)loadFromDBOrRequestFromAPI:(int)page{
+
     if ([self networkConnection] == NotReachable) {
         
-        [self.dbHelper loadMoviesPage:page withSize:10 withCompletionHandler:^(NSMutableArray *results, NSError *error) {
-            if(results.count) {
-                NSLog(@"resultsCount - %lu", results.count);
-                [self.moviesRepo removeAllObjects];
-                [self.moviesRepo addObjectsFromArray:results];
-                
-            }
-            
-            if(error) {
-                NSLog(@"error - %@", [error localizedDescription]);
-            }
-        }];
+        [self loadFromDB:page];
         
     } else {
         //First request , where  1 is the page's number
@@ -303,7 +280,37 @@
         
         
     }
+
 }
 
+-(void)loadFromDB:(int)page{
+    
+        [self.dbHelper loadMoviesPage:page withSize:10 withCompletionHandler:^(NSMutableArray *results, NSError *error) {
+        if(results.count) {
+            NSLog(@"resultsCount - %lu", results.count);
+            [self.moviesRepo addObjectsFromArray:results];
+   
+            
+        }
+        
+        if(error) {
+            NSLog(@"error - %@", [error localizedDescription]);
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+                [self getLastUpadateTime];
+            });
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self.listView reloadData];
+            });
+            
+    }];
+    
+}
+
+-(void)getLastUpadateTime{
+    NSUserDefaults *prefs = [NSUserDefaults standardUserDefaults];
+    NSString *currentDate = [prefs stringForKey:@"keyToLastUpdate"];
+    self.lastTimeUpdate.text =[NSString stringWithFormat:@"LastUpdate :%@", currentDate];
+}
 
 @end

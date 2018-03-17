@@ -12,7 +12,8 @@
 @interface DetailTVSerieViewController ()
 //declaração das Outlets ligadas aos elementos mutáveis do ecrã
 @property (weak, nonatomic) IBOutlet UILabel *titleLabel;
-@property (weak, nonatomic) IBOutlet UILabel *overviewLabel;
+@property (weak, nonatomic) IBOutlet UITextView *overviewLabel;
+
 @property (weak, nonatomic) IBOutlet UILabel *voteAvgLabel;
 @property (weak, nonatomic) IBOutlet UILabel *releaseLabel;
 @property (weak, nonatomic) IBOutlet UIImageView *downloadImage;

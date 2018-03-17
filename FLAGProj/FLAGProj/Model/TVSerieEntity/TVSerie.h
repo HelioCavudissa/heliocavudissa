@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "CDTVSerie+CoreDataClass.h"
 
 @interface TVSerie : NSObject
 @property (nonatomic, strong) NSNumber *tvSerieId;
@@ -21,4 +22,6 @@
 @property (nonatomic, strong) NSNumber *vote_count;
 @property (nonatomic, strong) NSNumber *vote_average;
 -(instancetype)initWithDictionary:(NSDictionary*)obj;
+-(instancetype)initWithCDModel:(CDTVSerie*)cdObj;
+
 @end

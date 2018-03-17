@@ -16,6 +16,7 @@
 #import "DetailTVSerieViewController.h"
 
 @interface TVSerieListViewController () <UITableViewDataSource,UITableViewDelegate,UISearchBarDelegate>
+@property (weak, nonatomic) IBOutlet UILabel *lastTimeUpdate;
 
 @property (strong, nonatomic) CoreDataHelper *dbHelper;
 @property (weak, nonatomic) IBOutlet UITableView *listView;
