@@ -16,7 +16,6 @@
 @property (weak, nonatomic) IBOutlet UILabel *voteAvgLabel;
 @property (weak, nonatomic) IBOutlet UILabel *releaseLabel;
 @property (weak, nonatomic) IBOutlet UIImageView *downloadImage;
-
 @end
 
 @interface DetailViewController ()
@@ -32,8 +31,10 @@
     [self.overviewLabel setText:self.movie.overview];
     [self.voteAvgLabel setText:self.movie.vote_average.stringValue];
     [self.releaseLabel setText:self.movie.release_date ];
+    NSLocale *deviceLocale = [NSLocale currentLocale];
+    NSNumberFormatter *formater =[[NSNumberFormatter alloc] init];
+    formater.locale = deviceLocale;
 
-    
     
     //create an image URL to download
     NSURL *imgRequestURL = [HttpRequestsUtility buildRequestURL:@"https://image.tmdb.org/t/p/w500/" andPath: self.movie.poster_path withQueryParams:nil];
@@ -67,7 +68,7 @@
 */
 
 - (IBAction)shareWithinApps:(id)sender {
-    NSArray *itemsToShare = @[self.movie.title];
+    NSArray *itemsToShare = @[self.movie.overview];
     UIActivityViewController *uiacv = [ [UIActivityViewController alloc] initWithActivityItems:itemsToShare applicationActivities:nil ];
     [self presentViewController:uiacv animated:YES completion:nil];
 }

@@ -1,3 +1,4 @@
+
 //
 //  TVSerieListViewController.m
 //  FLAGProj
@@ -10,17 +11,18 @@
 #import "Configs.h"
 #import "HttpRequestsUtility.h"
 #import "TVSerieResponse.h"
-#import "CoreDataHelper.h"
+#import "TVSerieCoreDataHelper.h"
 #import "TVSerieTableViewCell.h"
 #import "TVSerie.h"
 #import "DetailTVSerieViewController.h"
+#import "Reachability.h"
 
 @interface TVSerieListViewController () <UITableViewDataSource,UITableViewDelegate,UISearchBarDelegate>
 @property (weak, nonatomic) IBOutlet UILabel *lastTimeUpdate;
 
-@property (strong, nonatomic) CoreDataHelper *dbHelper;
+@property (strong, nonatomic) TVSerieCoreDataHelper *dbHelper;
 @property (weak, nonatomic) IBOutlet UITableView *listView;
-@property (nonatomic, strong) NSMutableArray *moviesRepo;
+@property (nonatomic, strong) NSMutableArray *tvSeriesRepo;
 @property (nonatomic,strong) UIView *footerView;
 @property (nonatomic,strong) UIView *headerView;
 @property (nonatomic,strong) NSNumber *numberPages;
@@ -29,7 +31,9 @@
 @property (nonatomic, strong) NSMutableArray  *searchResults;
 @property (nonatomic, strong)  NSDateFormatter *dateFormatter;
 @property (nonatomic) UIRefreshControl *refreshControl;
-@property (weak, nonatomic) IBOutlet UISearchBar *searchMovieBar;
+@property (weak, nonatomic) IBOutlet UISearchBar *searchSerieBar;
+@property (nonatomic,assign) Boolean isFirstRequest ;
+
 
 @end
 
@@ -38,19 +42,16 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
-    self.dbHelper = [[CoreDataHelper alloc] init];
-    self.moviesRepo = [ [NSMutableArray alloc] init];
+    self.dbHelper = [[TVSerieCoreDataHelper alloc] init];
+    self.tvSeriesRepo = [ [NSMutableArray alloc] init];
     self.searchResults = [ [NSMutableArray alloc] init];
     self.listView.dataSource = self;
     self.listView.delegate = self;
-    self.searchMovieBar.delegate = self;
-    self.searchMovieBar.showsCancelButton =true;
+    self.searchSerieBar.delegate = self;
+    self.searchSerieBar.showsCancelButton =true;
     self.counter =1;
     self.isSearching=false;
-    
-    
-    
-    
+    self.isFirstRequest = true;
     
     
     
@@ -62,23 +63,12 @@
     
     
     // setting footerView
-    [self loadMovies];
+    [self loadTVSeries];
     //Setting refreshControl
     [self refreshSettings];
-    //First request , where  1 is the page's number
-    [self doRequest:1];
+    [self loadFromDBOrRequestFromAPI:1];
+     self.isFirstRequest=false;
     
-    
-    //load Movie Objects from core data, with pagination, executing all data fetch in background and delivering the results in foreground main thread
-    [self.dbHelper loadMoviesPage:1 withSize:10 withCompletionHandler:^(NSMutableArray *results, NSError *error) {
-        if(results.count) {
-            NSLog(@"resultsCount - %lu", results.count);
-        }
-        
-        if(error) {
-            NSLog(@"error - %@", [error localizedDescription]);
-        }
-    }];
     
 }
 
@@ -89,7 +79,7 @@
     TVSerieTableViewCell *cell = (TVSerieTableViewCell*)[tableView dequeueReusableCellWithIdentifier:@"utilizador-right-detail-cell"];
     
     
-    TVSerie *item =  (self.isSearching) ? [self.searchResults objectAtIndex:indexPath.row] : [self.moviesRepo objectAtIndex:indexPath.row];
+    TVSerie *item =  (self.isSearching) ? [self.searchResults objectAtIndex:indexPath.row] : [self.tvSeriesRepo objectAtIndex:indexPath.row];
     
     [cell setCellValues:item];
     
@@ -110,12 +100,12 @@
 
 - (NSInteger)tableView:(nonnull UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     //retorno da contagem do número de linhas
-    return self.isSearching ? self.searchResults.count : self.moviesRepo.count;
+    return self.isSearching ? self.searchResults.count : self.tvSeriesRepo.count;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     //obtenção do modelo dos utilizadores correspondente à linha seleccionada
-    TVSerie *item = self.isSearching ? [self.searchResults objectAtIndex:indexPath.row]:[self.moviesRepo objectAtIndex:indexPath.row];
+    TVSerie *item = self.isSearching ? [self.searchResults objectAtIndex:indexPath.row]:[self.tvSeriesRepo objectAtIndex:indexPath.row];
     
     //Instanciação manual do ecrã seguinte no fluxo recorrendo ao carregamento do storyboard a partir do nome deste e o ViewController a partir do identificador atribuido no Interface Builder
     UIStoryboard *sbMain = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
@@ -127,7 +117,7 @@
     [self.navigationController pushViewController:detail animated:YES];
 }
 
-- (void)loadMovies  {
+- (void)loadTVSeries  {
     
     CGRect footerFrame = CGRectMake(0, 0, self.listView.bounds.size.width, 50);
     self.footerView = [[UIView alloc] initWithFrame:footerFrame];
@@ -149,36 +139,7 @@
     
 }
 
--(UIView*)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
-{
-    // 1. The view for the header
-    UIView* headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, tableView.frame.size.width, 22)];
-    
-    // 2. Set a custom background color and a border
-    headerView.backgroundColor = [UIColor colorWithWhite:0.5f alpha:1.0f];
-    headerView.layer.borderColor = [UIColor colorWithWhite:0.5 alpha:1.0].CGColor;
-    headerView.layer.borderWidth = 1.0;
-    
-    // 3. Add a label
-    UILabel* headerLabel = [[UILabel alloc] init];
-    headerLabel.frame = CGRectMake(5, 2, tableView.frame.size.width - 5, 18);
-    headerLabel.backgroundColor = [UIColor clearColor];
-    headerLabel.textColor = [UIColor whiteColor];
-    headerLabel.font = [UIFont boldSystemFontOfSize:16.0];
-    
-    [self.dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
-    
-    NSString *currentDate = [self.dateFormatter stringFromDate:[NSDate date]];
-    
-    headerLabel.text =[NSString stringWithFormat:@"LastUpdate :%@", currentDate];
-    headerLabel.textAlignment = NSTextAlignmentCenter;
-    
-    // 4. Add the label to the header view
-    [headerView addSubview:headerLabel];
-    
-    // 5. Finally return
-    return headerView;
-}
+
 -(void)footerTaped{
     
     if(++self.counter < self.numberPages.integerValue){
@@ -198,13 +159,19 @@
 }
 
 - (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar{
-    
-    for(Movie *movie in self.moviesRepo){
-        NSString* title = [movie.title lowercaseString];
-        if([title containsString:[searchBar.text lowercaseString]]){
-            [self.searchResults addObject:movie];
+  
+
+    if([self networkConnection])
+        [self doSearchRequest:[searchBar.text lowercaseString]];
+    else
+        for(TVSerie *tvSerie in self.tvSeriesRepo){
+            NSString* title = [tvSerie.name lowercaseString];
+            if([title containsString:[searchBar.text lowercaseString]]){
+                [self.searchResults addObject:tvSerie];
+            }
         }
-    }
+    
+    
     self.isSearching=true;
     
     [self.listView reloadData];
@@ -214,12 +181,11 @@
     self.isSearching=false;
     [self.searchResults removeAllObjects];
     [self.listView reloadData];
-    self.searchMovieBar.text = @"";
+    self.searchSerieBar.text = @"";
     
 }
 
 -(void)doRequest:(int)page{
-    
     NSURL *requestURL = [HttpRequestsUtility buildRequestURL:API_BASE_URL andPath:@"tv/popular" withQueryParams:@{@"api_key": API_KEY, @"language": @"pt-PT", @"page": [NSString stringWithFormat:@"%d",page]}];
     
     __weak TVSerieListViewController *weakSelf = self;
@@ -227,23 +193,45 @@
         //this completion handler code is executing in background
         if(error != nil) {
             NSLog(@"error - %@", [error localizedDescription]);
+            [self loadFromDB:page];
+            [self displayToast];
         }
         else {
             self.dateFormatter = [[NSDateFormatter alloc] init];
+            [self.dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+            NSString *currentDate = [self.dateFormatter stringFromDate:[NSDate date]];
+            NSUserDefaults *pref = [NSUserDefaults standardUserDefaults];
+            [pref setObject:currentDate forKey:@"keyToLastTVSeriesUpdate"];
+            
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self getLastUpadateTime];
+            });
+            
             //parse the service response and transform into Model Objects
             NSDictionary *dict = (NSDictionary*)response;
             NSLog(@"response - %@", dict);
             
+            
             TVSerieResponse *responseParse = [[TVSerieResponse alloc] initWithDictionary:dict];
-            [self.moviesRepo addObjectsFromArray: responseParse.results ];
+            self.numberPages = responseParse.total_pages;
+            if(responseParse.page.integerValue == 1){
+                
+                [self.tvSeriesRepo removeAllObjects];
+            }
+            [self.tvSeriesRepo addObjectsFromArray: responseParse.results ];
             
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self.listView reloadData];
             });
             //save retrieved model objects in coredata database via dbhelper instanfe
-           // [weakSelf.dbHelper saveOrUpdateMovieList:responseParse.results];
+            //only the first time or for the next pages
+            if(self.isFirstRequest || page>1)
+                [weakSelf.dbHelper saveOrUpdateTVSerieList:responseParse.results];
+            
         }
     }];
+    
     
 }
 
@@ -260,5 +248,114 @@
     //Setting the tint Color of the Activity Animation
     self.refreshControl.tintColor = [UIColor blackColor];
 }
+
+- (BOOL)networkConnection {
+    return [[Reachability reachabilityWithHostName:@"www.google.com"] currentReachabilityStatus];
+}
+
+-(void)loadFromDBOrRequestFromAPI:(int)page{
+    
+    if ([self networkConnection] == NotReachable) {
+        
+        [self loadFromDB:page];
+        
+    } else {
+        //First request , where  1 is the page's number
+        [self doRequest:page];
+        
+        
+    }
+    
+}
+
+-(void)loadFromDB:(int)page{
+    
+    [self.dbHelper loadTVSeriesPage:page withSize:10 withCompletionHandler:^(NSMutableArray *results, NSError *error) {
+        if(results.count) {
+            NSLog(@"resultsCount - %lu", results.count);
+            [self.tvSeriesRepo addObjectsFromArray:results];
+            
+            
+        }
+        if(results.count==0)
+              [self displayToast];
+        
+        if(error) {
+            NSLog(@"error - %@", [error localizedDescription]);
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self getLastUpadateTime];
+        });
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.listView reloadData];
+        });
+        
+    }];
+    
+}
+
+-(void)getLastUpadateTime{
+    NSUserDefaults *pref= [NSUserDefaults standardUserDefaults];
+    NSString *currentDate = [pref stringForKey:@"keyToLastTVSeriesUpdate"];
+    self.lastTimeUpdate.text =[NSString stringWithFormat:@"LastUpdate :%@", currentDate];
+}
+
+
+- (void)displayToast{
+    NSString *message = @"Please connect to internet...";
+    
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:nil message:message  preferredStyle:UIAlertControllerStyleActionSheet];
+    
+    [self presentViewController:alert animated:YES completion:nil];
+    
+    int duration = 10; // duration in seconds
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, duration * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        
+        [alert dismissViewControllerAnimated:YES completion:nil];
+        
+    });
+}
+
+
+-(void)doSearchRequest:(NSString*)query{
+    
+    NSURL *requestURL = [HttpRequestsUtility buildRequestURL:API_BASE_URL andPath:@"search/tv" withQueryParams:@{@"api_key": API_KEY, @"language": @"pt-PT",@"query": query,@"page": [NSString stringWithFormat:@"%d",1]}];
+    [HttpRequestsUtility executeGETRequest:requestURL withCompletion:^(id response, NSError *error) {
+        //this completion handler code is executing in background
+        if(error != nil) {
+            NSLog(@"error - %@", [error localizedDescription]);
+
+            [self displayToast];
+        }
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self getLastUpadateTime];
+        });
+        
+        //parse the service response and transform into Model Objects
+        NSDictionary *dict = (NSDictionary*)response;
+        NSLog(@"response - %@", dict);
+        
+        
+         TVSerieResponse  *responseParse = [[ TVSerieResponse  alloc] initWithDictionary:dict];
+        self.numberPages = responseParse.total_pages;
+        if(responseParse.page.integerValue == 1){
+            
+            [self.searchResults removeAllObjects];
+        }
+        [self.searchResults addObjectsFromArray: responseParse.results ];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.listView reloadData];
+        });
+        
+        
+    }];
+    
+}
+
+
+
 
 @end

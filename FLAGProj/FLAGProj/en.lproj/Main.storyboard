@@ -287,7 +287,7 @@
                     <connections>
                         <outlet property="lastTimeUpdate" destination="MCG-Ix-bV7" id="qkM-Kr-e3x"/>
                         <outlet property="listView" destination="t27-vN-kKf" id="VFn-5r-ON2"/>
-                        <outlet property="searchMovieBar" destination="s4Z-d9-6k2" id="VQj-HV-YzS"/>
+                        <outlet property="searchSerieBar" destination="s4Z-d9-6k2" id="of1-9v-YkO"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="WaY-pp-BpJ" userLabel="First Responder" sceneMemberID="firstResponder"/>

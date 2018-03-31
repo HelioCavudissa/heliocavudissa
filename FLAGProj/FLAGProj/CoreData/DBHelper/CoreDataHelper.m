@@ -74,13 +74,13 @@
     }];
 }
 
--(void)loadMoviesPage:(NSInteger)page withSize:(NSInteger)pageSize withCompletionHandler:(void (^) (NSMutableArray*, NSError*))completion {
+-(void)loadMoviesPage:(NSInteger)page withSize:(NSInteger)pageSize  withCompletionHandler:(void (^) (NSMutableArray*, NSError*))completion {
     
     dispatch_async(dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSMutableArray *moviesArray = [NSMutableArray new];
         
         NSFetchRequest *moviesFetch = [NSFetchRequest fetchRequestWithEntityName:@"CDMovie"];
-        NSSortDescriptor *sort = [[NSSortDescriptor alloc] initWithKey:@"movie_id" ascending:NO];
+        NSSortDescriptor *sort = [[NSSortDescriptor alloc] initWithKey: @"movie_id" ascending:NO];
         [moviesFetch setSortDescriptors:@[sort]];
         
         NSInteger startOffset = page > 0 ? ((page-1)*pageSize) : 0;
@@ -100,6 +100,9 @@
         });
     });
 }
+
+
+
 
 
 @end

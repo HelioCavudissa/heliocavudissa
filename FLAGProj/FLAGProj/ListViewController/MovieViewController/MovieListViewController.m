@@ -54,15 +54,6 @@
     self.isFirstRequest = true;
  
  
-    
-   
-
-  //  NSLocale *deviceLocale = [NSLocale currentLocale];
-    
-  ///  NSNumberFormatter *formater =[[NSNumberFormatter alloc] init];
- ///   formater.locale = deviceLocale;
-  ///  NSString *heardertext = NSLocalizedString(@"Movie.List.Header.RefreshDate.Text update", nil);
-    
 
     // setting footerView
     [self loadMovies];
@@ -164,12 +155,17 @@
 
 - (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar{
 
-    for(Movie *movie in self.moviesRepo){
+/*    for(Movie *movie in self.moviesRepo){
         NSString* title = [movie.title lowercaseString];
         if([title containsString:[searchBar.text lowercaseString]]){
             [self.searchResults addObject:movie];
         }
-    }
+    }*/
+   if([self networkConnection])
+       [self doSearchRequest:[searchBar.text lowercaseString]];
+   else
+       [self searchInDB:searchBar.text];
+        
     self.isSearching=true;
     
     [self.listView reloadData];
@@ -233,6 +229,45 @@
     
 }
 
+-(void)doSearchRequest:(NSString*)query{
+    
+    NSURL *requestURL = [HttpRequestsUtility buildRequestURL:API_BASE_URL andPath:@"search/movie" withQueryParams:@{@"api_key": API_KEY, @"language": @"pt-PT",@"query": query,@"page": [NSString stringWithFormat:@"%d",1]}];
+    
+    [HttpRequestsUtility executeGETRequest:requestURL withCompletion:^(id response, NSError *error) {
+        //this completion handler code is executing in background
+        if(error != nil) {
+            NSLog(@"error - %@", [error localizedDescription]);
+            [self searchInDB:query];
+            [self displayToast];
+        }
+
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self getLastUpadateTime];
+            });
+            
+            //parse the service response and transform into Model Objects
+            NSDictionary *dict = (NSDictionary*)response;
+            NSLog(@"response - %@", dict);
+            
+            
+            MoviesResponse *responseParse = [[MoviesResponse alloc] initWithDictionary:dict];
+            self.numberPages = responseParse.total_pages;
+            if(responseParse.page.integerValue == 1){
+                
+            [self.searchResults removeAllObjects];
+            }
+            [self.searchResults addObjectsFromArray: responseParse.results ];
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self.listView reloadData];
+            });
+           
+            
+    }];
+    
+}
+
+
 - (void)refreshTable {
     
     [self doRequest:1];
@@ -255,7 +290,7 @@
     
     [self presentViewController:alert animated:YES completion:nil];
     
-    int duration = 3; // duration in seconds
+    int duration = 10; // duration in seconds
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, duration * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
         
@@ -285,13 +320,14 @@
 
 -(void)loadFromDB:(int)page{
     
-        [self.dbHelper loadMoviesPage:page withSize:10 withCompletionHandler:^(NSMutableArray *results, NSError *error) {
+    [self.dbHelper loadMoviesPage:page withSize:10 withCompletionHandler:^(NSMutableArray *results, NSError *error) {
         if(results.count) {
             NSLog(@"resultsCount - %lu", results.count);
             [self.moviesRepo addObjectsFromArray:results];
    
-            
         }
+        if(results.count==0)
+            [self displayToast];
         
         if(error) {
             NSLog(@"error - %@", [error localizedDescription]);
@@ -303,6 +339,37 @@
                 [self.listView reloadData];
             });
             
+    }];
+    
+}
+
+-(void)searchInDB:(NSString*)query{
+    
+    [self.dbHelper loadMoviesPage:1 withSize:10 withCompletionHandler:^(NSMutableArray *results, NSError *error) {
+        if(results.count) {
+            NSLog(@"resultsCount - %lu", results.count);
+        
+            for(Movie *movie in results){
+                NSString* title = [movie.title lowercaseString];
+                if([title containsString:[query lowercaseString]]){
+                    [self.searchResults addObject:movie];
+                }
+            }
+            self.isSearching=true;
+            
+            
+        }
+        
+        if(error) {
+            NSLog(@"error - %@", [error localizedDescription]);
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self getLastUpadateTime];
+        });
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.listView reloadData];
+        });
+        
     }];
     
 }

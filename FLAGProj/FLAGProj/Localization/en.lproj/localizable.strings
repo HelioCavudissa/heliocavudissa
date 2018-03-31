@@ -1,8 +1,9 @@
-/* 
-  localizable.strings
-  FLAGProj
 
-  Created by Admin on 13/03/2018.
-  Copyright © 2018 Pedro Brito. All rights reserved.
-*/
 "Movie.List.Header.RefreshDate.Text"= "last update";
+"Movie.List.Header.Rating.Text"= "rating : ";
+"Movie.List.Header.LoadMore.Text"= "load more";
+"Movie.List.Header.ReleaseDate.Text"= "release date : ";
+"Movie.Detail.Button.Share.Text"= "share";
+
+
+
