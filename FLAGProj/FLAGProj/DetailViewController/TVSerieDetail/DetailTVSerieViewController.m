@@ -8,6 +8,8 @@
 
 #import "DetailTVSerieViewController.h"
 #import "HttpRequestsUtility.h"
+#import "Configs.h"
+#import "MoviesResponse.h"
 
 @interface DetailTVSerieViewController ()
 //declaração das Outlets ligadas aos elementos mutáveis do ecrã
@@ -17,6 +19,7 @@
 @property (weak, nonatomic) IBOutlet UILabel *voteAvgLabel;
 @property (weak, nonatomic) IBOutlet UILabel *releaseLabel;
 @property (weak, nonatomic) IBOutlet UIImageView *downloadImage;
+@property (weak, nonatomic) NSString* homepage;
 
 
 @end
@@ -30,6 +33,7 @@
     [self.overviewLabel setText:self.tvSerie.overview];
     [self.voteAvgLabel setText:self.tvSerie.vote_average.stringValue];
     [self.releaseLabel setText:self.tvSerie.firstAirDate ];
+    [self doSearchRequest:self.tvSerie.tvSerieId];
     
     
     
@@ -65,9 +69,41 @@
  */
 
 - (IBAction)shareWithinApps:(id)sender {
-    NSArray *itemsToShare = @[self.title];
+    NSArray *itemsToShare = @[self.tvSerie.overview];
+    
+    // because not all TVSeries have homepage, when they dont have ill share the overview
+    if(self.homepage != nil)
+        itemsToShare = @[self.homepage];
     UIActivityViewController *uiacv = [ [UIActivityViewController alloc] initWithActivityItems:itemsToShare applicationActivities:nil ];
     [self presentViewController:uiacv animated:YES completion:nil];
 }
+
+
+-(void)doSearchRequest:(NSNumber*)tv_id{
+    
+    NSURL *requestURL = [HttpRequestsUtility buildRequestURL:API_BASE_URL andPath:[NSString stringWithFormat:@"movie/%@",tv_id.stringValue] withQueryParams:@{@"api_key": API_KEY}];
+    
+    [HttpRequestsUtility executeGETRequest:requestURL withCompletion:^(id response, NSError *error) {
+        //this completion handler code is executing in background
+        if(error != nil) {
+            NSLog(@"error - %@", [error localizedDescription]);
+            
+        }
+        
+        
+        
+        //parse the service response and transform into Model Objects
+        NSDictionary *dict = (NSDictionary*)response;
+        self.homepage = [dict objectForKey:@"homepage"];
+        
+        
+        
+        
+        
+    }];
+    
+}
+
+
 
 @end
